@@ -39,6 +39,7 @@ class ADAM(Optimizer):
         self._eps = eps
         self._amsgrad = amsgrad
         self.loss_list = []
+        self.params = []
         # runtime variables
         self._t = 0  # time steps
         self._m = np.zeros(1)
@@ -112,6 +113,7 @@ class ADAM(Optimizer):
         if self._amsgrad:
             self._v_eff = np.zeros(np.shape(derivative))
         self.loss_list = []
+        self.params = []
         params = params_new = initial_point
         while self._t < self._maxiter:
             derivative = gradient_function(params)
@@ -122,11 +124,13 @@ class ADAM(Optimizer):
             if not self._amsgrad:
                 params_new = (params - lr_eff * self._m.flatten()
                               / (np.sqrt(self._v.flatten()) + self._noise_factor))
+                self.params.append(params_new)
                 self.loss_list.append(objective_function(params_new))
             else:
                 self._v_eff = np.maximum(self._v_eff, self._v)
                 params_new = (params - lr_eff * self._m.flatten()
                               / (np.sqrt(self._v_eff.flatten()) + self._noise_factor))
+                self.params.append(params_new)
                 self.loss_list.append(objective_function(params_new))
             if self._snapshot_dir:
                 self.save_params(self._snapshot_dir)
@@ -151,4 +155,4 @@ class ADAM(Optimizer):
                                                         (objective_function, self._eps))
 
         point, value, nfev = self.minimize(objective_function, initial_point, gradient_function)
-        return point, value, nfev, self.loss_list
+        return point, value, nfev, self.loss_list, self.params
